@@ -4,14 +4,20 @@ import numpy as np
 
 app = Flask(__name__)
 
-# Load model
+# Load the model and label encoder
 model = joblib.load("efficiency_model.pkl")
 encoder = joblib.load("label_encoder.pkl")
 
-@app.route('/predict', methods=['POST'])
+# 🟢 Optional root route for browser testing
+@app.route("/", methods=["GET"])
+def home():
+    return "✅ AI API is running. Use POST /predict to get efficiency prediction."
+
+# 🔵 Prediction route for POST request
+@app.route("/predict", methods=["POST"])
 def predict():
-    data = request.json
     try:
+        data = request.json
         features = np.array([[data['temperature'], data['humidity'], data['voltage'], data['current'], data['hour']]])
         prediction = model.predict(features)
         label = encoder.inverse_transform(prediction)
@@ -19,6 +25,6 @@ def predict():
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
-# Required for gunicorn
+# ✅ Only used if you run it locally with python api.py
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
