@@ -5,8 +5,8 @@ import numpy as np
 app = Flask(__name__)
 
 # Load the model and label encoder
-model = joblib.load("efficiency_model.pkl")
-encoder = joblib.load("label_encoder.pkl")
+model = joblib.load("efficiency_model_v2.pkl")
+encoder = joblib.load("label_encoder_v2.pkl")
 
 # 🟢 Optional root route for browser testing
 @app.route("/", methods=["GET"])
