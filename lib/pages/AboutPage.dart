@@ -39,7 +39,7 @@ class AboutPage extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             const Text(
-              'Life Merlyn\nComputer Science Intern',
+              'Life Merlyn\nComputer Science Intern\nCompanny : Yifang Medical',
               style: TextStyle(fontSize: 16),
             ),
             const Spacer(),

@@ -74,6 +74,26 @@ class _HomeState extends State<Home> {
 class DashboardScreen extends StatelessWidget {
   final DatabaseReference dbRef = FirebaseDatabase.instance.ref("real_data");
 
+  // Helper method to safely convert values to strings
+  String _safeValueToString(dynamic value) {
+    if (value == null) return 'N/A';
+    return value.toString();
+  }
+
+  // Helper method to get the latest entry based on timestamp
+  Map<String, dynamic> _getLatestEntry(Map rawData) {
+    var entries = rawData.entries.toList();
+
+    // Sort entries by timestamp to get the truly latest one
+    entries.sort((a, b) {
+      var timeA = a.value['time'] ?? '';
+      var timeB = b.value['time'] ?? '';
+      return timeB.compareTo(timeA); // Descending order (latest first)
+    });
+
+    return Map<String, dynamic>.from(entries.first.value);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -88,19 +108,23 @@ class DashboardScreen extends StatelessWidget {
           ],
         ),
       ),
-      body: FutureBuilder<DataSnapshot>(
-        future: dbRef.get(),
+      body: StreamBuilder<DatabaseEvent>(
+        stream: dbRef.onValue, // Real-time updates
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (!snapshot.hasData || snapshot.data!.value == null) {
+          if (snapshot.hasError) {
+            return Center(child: Text("Error: ${snapshot.error}"));
+          }
+
+          if (!snapshot.hasData || snapshot.data!.snapshot.value == null) {
             return const Center(child: Text("No data available"));
           }
 
-          final rawData = snapshot.data!.value as Map;
-          final latestEntry = rawData.entries.last.value as Map;
+          final rawData = snapshot.data!.snapshot.value as Map;
+          final latestEntry = _getLatestEntry(rawData);
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
@@ -111,18 +135,49 @@ class DashboardScreen extends StatelessWidget {
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: const Color.fromARGB(255, 189, 208, 218),
-                    borderRadius: BorderRadius.circular(20), // more rounded
-                  ),
-                  child: const Center(
-                    child: Text(
-                      'Current Solar Panel Status',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.blueGrey.shade600,
+                        Colors.blueGrey.shade800,
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Column(
+                    children: [
+                      const Text(
+                        'Current Solar Panel Status',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              color: Colors.green,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Last Update: ${latestEntry['time'] ?? 'N/A'} | ${latestEntry['date'] ?? 'N/A'}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.white70,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
 
@@ -135,43 +190,92 @@ class DashboardScreen extends StatelessWidget {
                     children: [
                       StatusCard(
                         label: "Voltage",
-                        value: latestEntry['voltage'],
+                        value: _safeValueToString(latestEntry['voltage']),
+                        unit: "V",
+                        icon: Icons.flash_on,
+                        color: Colors.amber,
                       ),
                       StatusCard(
                         label: "Current",
-                        value: latestEntry['current'],
+                        value: _safeValueToString(latestEntry['current']),
+                        unit: "mA",
+                        icon: Icons.electrical_services,
+                        color: Colors.blue,
                       ),
-                      StatusCard(label: "Power", value: latestEntry['power']),
+                      StatusCard(
+                        label: "Power",
+                        value: _safeValueToString(latestEntry['power']),
+                        unit: "W",
+                        icon: Icons.power,
+                        color: Colors.green,
+                      ),
                       StatusCard(
                         label: "Temperature",
-                        value: latestEntry['temperature'],
+                        value: _safeValueToString(latestEntry['temperature']),
+                        unit: "°C",
+                        icon: Icons.thermostat,
+                        color: Colors.orange,
                       ),
                       StatusCard(
                         label: "Humidity",
-                        value: latestEntry['humidity'],
+                        value: _safeValueToString(latestEntry['humidity']),
+                        unit: "%",
+                        icon: Icons.water_drop,
+                        color: Colors.cyan,
                       ),
                       StatusCard(
                         label: "Charging",
-                        value: latestEntry['charging'],
+                        value: _safeValueToString(latestEntry['charging']),
+                        unit: "",
+                        icon: Icons.battery_charging_full,
+                        color: Colors.purple,
+                      ),
+                      StatusCard(
+                        label: "Efficiency",
+                        value: _safeValueToString(latestEntry['Efficiency']),
+                        unit: "",
+                        icon: Icons.battery_charging_full,
+                        color: Colors.purple,
                       ),
                     ],
                   ),
                 ),
 
                 const SizedBox(height: 20),
-                Center(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.pushReplacement(
-                        context,
-                        PageRouteBuilder(
-                          pageBuilder: (_, __, ___) => Home(),
-                          transitionDuration: Duration.zero,
+                // Debug info to show which entry is being displayed
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blueGrey.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    children: [
+                      const Text(
+                        'Debug Info',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blueGrey,
                         ),
-                      );
-                    },
-                    icon: const Icon(Icons.refresh),
-                    label: const Text("Refresh"),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Total entries: ${rawData.length}',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: Colors.blueGrey,
+                        ),
+                      ),
+                      Text(
+                        'Latest time: ${latestEntry['time']} on ${latestEntry['date']}',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: Colors.blueGrey,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -186,8 +290,17 @@ class DashboardScreen extends StatelessWidget {
 class StatusCard extends StatelessWidget {
   final String label;
   final String value;
+  final String unit;
+  final IconData icon;
+  final Color color;
 
-  const StatusCard({required this.label, required this.value});
+  const StatusCard({
+    required this.label,
+    required this.value,
+    this.unit = "",
+    required this.icon,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -199,20 +312,62 @@ class StatusCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.blueGrey,
-            blurRadius: 6,
+            color: Colors.blueGrey.withOpacity(0.2),
+            blurRadius: 8,
             offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
         children: [
-          Text(
-            label,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: color, size: 18),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                    color: Colors.blueGrey.shade700,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
-          Text(value, style: const TextStyle(fontSize: 16)),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Flexible(
+                child: Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blueGrey,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              if (unit.isNotEmpty) ...[
+                const SizedBox(width: 2),
+                Text(
+                  unit,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.blueGrey.shade400,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ],
+          ),
         ],
       ),
     );

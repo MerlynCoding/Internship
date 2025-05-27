@@ -211,23 +211,23 @@ class _DataPageState extends State<DataPage> {
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor:
-                      selectedPath == 'data_file_1'
+                      selectedPath == 'real_data1'
                           ? Colors.orange
                           : Colors.grey[600],
                 ),
-                onPressed: () => changeDataPath('data_file_1'),
-                child: const Text('Data File 1'),
+                onPressed: () => changeDataPath('real_data1'),
+                child: const Text('real_data1'),
               ),
               const SizedBox(width: 10),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor:
-                      selectedPath == 'data_file_2'
+                      selectedPath == 'real_data2'
                           ? Colors.orange
                           : Colors.grey[600],
                 ),
-                onPressed: () => changeDataPath('data_file_2'),
-                child: const Text('Data File 2'),
+                onPressed: () => changeDataPath('real_data2'),
+                child: const Text('real data2'),
               ),
             ],
           ),
