@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: ai-efficiency-api
+    runtime: python
+    buildCommand: ""
+    startCommand: python api.py
+    env: python
