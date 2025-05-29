@@ -230,13 +230,6 @@ class DashboardScreen extends StatelessWidget {
                         icon: Icons.battery_charging_full,
                         color: Colors.purple,
                       ),
-                      StatusCard(
-                        label: "Efficiency",
-                        value: _safeValueToString(latestEntry['Efficiency']),
-                        unit: "",
-                        icon: Icons.battery_charging_full,
-                        color: Colors.purple,
-                      ),
                     ],
                   ),
                 ),
